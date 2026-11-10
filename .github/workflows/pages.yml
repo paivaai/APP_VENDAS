@@ -1,0 +1,57 @@
+# Publica o app de demonstração (pasta app/) no GitHub Pages a cada push na main.
+# O link publicado abre no celular e pode ser instalado na tela inicial (PWA).
+name: Publicar app
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir sintaxe
+        run: |
+          node --check app/js/app.js
+          node --check app/service-worker.js
+          python3 -m json.tool app/manifest.webmanifest > /dev/null
+
+      - name: Montar a pasta publicada
+        run: |
+          mkdir _site
+          cp -r app/. _site/
+          # versão do service worker = commit (o celular percebe a atualização sozinho)
+          sed -i "s/^const VERSAO = '.*';/const VERSAO = '${GITHUB_SHA::7}';/" _site/service-worker.js
+          grep -n "^const VERSAO" _site/service-worker.js
+          # todo arquivo listado no cache precisa existir
+          node -e "
+            const fs=require('fs');
+            const s=fs.readFileSync('_site/service-worker.js','utf8');
+            const m=s.match(/ARQUIVOS = \[([\s\S]*?)\];/)[1];
+            let falta=0;
+            for (const x of m.match(/'[^']+'/g)) { const p=x.slice(1,-1); if (p==='./') continue; if(!fs.existsSync('_site/'+p)){console.error('FALTA: '+p); falta++;} }
+            process.exit(falta?1:0);"
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paiva AI</title>
+<meta name="description" content="Decisões de e-commerce preparadas por agentes de IA e aprovadas pelo WhatsApp.">
+<meta name="theme-color" content="#162033">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Paiva AI">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preload" href="fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Paiva AI</span>
+  </div>
+  <span class="demo-pill" title="Os números e as decisões desta tela são fictícios">Modo demonstração</span>
+</header>
+
+<main id="main">
+
+  <!-- HOJE -->
+  <section id="view-hoje" class="view" aria-labelledby="h-hoje">
+    <div class="lead">
+      <p class="lead-small" id="saudacao">Loja Demo</p>
+      <h1 id="h-hoje">3 decisões esperam você</h1>
+      <p class="lead-text">Os agentes já fizeram a análise. Escolha uma opção ou responda pelo WhatsApp: o resultado aparece aqui.</p>
+    </div>
+
+    <div class="roi" aria-live="polite">
+      <div class="roi-value" id="roi-valor">R$ 0</div>
+      <div class="roi-label">gerados ou protegidos pelas decisões que você aprovou (estimativa)</div>
+    </div>
+
+    <div id="slips" class="slips"></div>
+
+    <h2 class="section-title" id="t-feitas" hidden>Já decididas</h2>
+    <ul id="feitas" class="done-list"></ul>
+  </section>
+
+  <!-- AGENTES -->
+  <section id="view-agentes" class="view" hidden aria-labelledby="h-agentes">
+    <div class="lead">
+      <h1 id="h-agentes">Três agentes cuidam da operação</h1>
+      <p class="lead-text">Cada um trabalha numa fase da venda. Você só aprova ou recusa.</p>
+    </div>
+
+    <ul class="agents">
+      <li>
+        <h2>Pré-venda</h2>
+        <p>Valida produtos de uma planilha, confere o que cada marketplace exige e decide: cadastra direto ou pergunta a você.</p>
+        <span class="state state-ok">Validação e decisão prontas</span>
+      </li>
+      <li>
+        <h2>Venda</h2>
+        <p>Recomenda cupom, desconto e preço, e avisa de estoque baixo antes de faltar.</p>
+        <span class="state state-wip">Estrutura criada</span>
+      </li>
+      <li>
+        <h2>Pós-venda</h2>
+        <p>Faz a triagem de devoluções, cancelamentos e perguntas de clientes.</p>
+        <span class="state state-wip">Estrutura criada</span>
+      </li>
+    </ul>
+
+    <h2 class="section-title">Teste o cadastro de produto</h2>
+    <p class="lead-text small">Preencha como se fosse uma linha da planilha. O agente confere os campos que o marketplace escolhido exige.</p>
+
+    <form id="form-produto" class="form" novalidate>
+      <label>Marketplace
+        <select id="f-mkt">
+          <option value="mercado_livre">Mercado Livre</option>
+          <option value="shopee">Shopee</option>
+          <option value="tiktok">TikTok Shop</option>
+          <option value="shein">Shein</option>
+        </select>
+      </label>
+      <label>Título <input id="f-title" autocomplete="off" placeholder="Sérum facial vitamina C 30 ml"></label>
+      <label>Descrição <textarea id="f-description" rows="2" placeholder="Para que serve, tamanho, composição"></textarea></label>
+      <div class="row2">
+        <label>Preço (R$) <input id="f-price" inputmode="decimal" autocomplete="off" placeholder="89,90"></label>
+        <label>Estoque <input id="f-stock" inputmode="numeric" autocomplete="off" placeholder="40"></label>
+      </div>
+      <div class="row2">
+        <label>SKU <input id="f-sku" autocomplete="off" placeholder="SER-VC-30"></label>
+        <label>Categoria sugerida <input id="f-category_hint" autocomplete="off" placeholder="Beleza e cuidado pessoal"></label>
+      </div>
+      <label>Imagens (quantas) <input id="f-images" inputmode="numeric" autocomplete="off" placeholder="3"></label>
+      <button type="submit" class="btn btn-primary">Validar produto</button>
+    </form>
+    <div id="resultado" class="resultado" aria-live="polite" hidden></div>
+  </section>
+
+  <!-- CANAIS -->
+  <section id="view-canais" class="view" hidden aria-labelledby="h-canais">
+    <div class="lead">
+      <h1 id="h-canais">Canais conectados</h1>
+      <p class="lead-text">Situação em 10 de novembro de 2026, conferida no servidor da plataforma.</p>
+    </div>
+    <ul class="channels" id="canais"></ul>
+    <p class="footnote">As chaves de acesso ficam guardadas só no servidor, nunca neste app.</p>
+  </section>
+
+  <!-- LOJA -->
+  <section id="view-loja" class="view" hidden aria-labelledby="h-loja">
+    <div class="lead">
+      <h1 id="h-loja">Vendas da semana</h1>
+      <p class="lead-text">Todos os canais num lugar só. Dados de demonstração.</p>
+    </div>
+    <div class="seg" role="tablist" aria-label="Canal" id="seg"></div>
+    <div class="figures" id="figuras"></div>
+    <div class="bars" id="barras" role="img" aria-label="Faturamento dos últimos 7 dias"></div>
+    <h2 class="section-title">Pedidos recentes</h2>
+    <ul class="orders" id="pedidos"></ul>
+  </section>
+
+</main>
+
+<nav class="tabbar" aria-label="Seções">
+  <button class="tab is-active" data-view="hoje" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v6a2 2 0 0 0 0 4v6H5v-6a2 2 0 0 0 0-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Hoje</span><i class="badge" id="badge" aria-hidden="true">3</i></button>
+  <button class="tab" data-view="agentes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 19c.8-3 3.2-4.5 6.5-4.5s5.700 1.500 6.500 4.500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Agentes</span></button>
+  <button class="tab" data-view="canais"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V4m6 3V4M7 7h10v4a5 5 0 0 1-10 0zM12 16v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Canais</span></button>
+  <button class="tab" data-view="loja"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11m7 9V5m7 15v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>Loja</span></button>
+</nav>
+
+<dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
+  <div class="sheet-head">
+    <div class="wa-avatar" aria-hidden="true"></div>
+    <div>
+      <h2 id="sheet-title">Pré-venda Paiva</h2>
+      <p>Conversa de WhatsApp (simulada)</p>
+    </div>
+    <button class="sheet-close" id="sheet-close" aria-label="Fechar conversa">Fechar</button>
+  </div>
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="chat-reply" id="chat-reply"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span id="toast-text"></span>
+  <button id="toast-undo" class="toast-undo">Desfazer</button>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sintaxe do backend
+        run: python -m compileall -q backend/app
+      - name: Validar docker-compose
+        run: docker compose -f docker-compose.yml config -q
+        env:
+          POSTGRES_USER: x
+          POSTGRES_PASSWORD: x
+          EVOLUTION_SERVER_URL: x
+          EVOLUTION_API_KEY: x
+          EVOLUTION_DB_NAME: x
+      - name: Garantir que nenhum segredo foi commitado
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then echo "ERRO: .env versionado"; exit 1; fi
