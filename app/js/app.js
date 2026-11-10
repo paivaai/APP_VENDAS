@@ -272,10 +272,9 @@
   const CANAIS = [
     { n: "Mercado Livre", s: "Conectado", t: "ok", note: "Login autorizado testado de ponta a ponta. Lê pedidos, produtos e métricas." },
     { n: "TikTok Shop", s: "Conectado só para leitura", t: "ok", note: "Falta pedir a permissão de escrita para cadastrar e alterar produtos." },
-    { n: "Shopee", s: "Planejado", t: "off", note: "Entra depois do Mercado Livre e do TikTok Shop, com conexão direta." },
     { n: "WhatsApp", s: "Em configuração", t: "warn", note: "O servidor está instalado. Faltam as 3 conversas por loja: pré-venda, venda e pós-venda." },
     { n: "Claude, a IA dos agentes", s: "Ativo", t: "ok", note: "Modelo rápido para a rotina e modelo avançado para decisões difíceis. O consumo é registrado por loja." },
-    { n: "Shein", s: "Planejado", t: "off", note: "Entra depois que Mercado Livre, TikTok e Shopee estiverem estáveis." }
+    { n: "Shein", s: "Planejado", t: "off", note: "Entra depois que Mercado Livre e TikTok Shop estiverem estáveis." }
   ];
   function renderCanais() {
     const ul = $("#canais");
@@ -291,7 +290,7 @@
   function rng(seed) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
   const CH = [
     { id: "total", n: "Total" }, { id: "ml", n: "Mercado Livre", seed: 11, base: 1500 },
-    { id: "tt", n: "TikTok Shop", seed: 23, base: 900 }, { id: "sp", n: "Shopee", seed: 37, base: 700 }
+    { id: "tt", n: "TikTok Shop", seed: 23, base: 900 }
   ];
   const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   function serie(c) {
@@ -301,7 +300,7 @@
   }
   const SERIES = {};
   CH.slice(1).forEach((c) => (SERIES[c.id] = serie(c)));
-  SERIES.total = SERIES.ml.map((v, i) => v + SERIES.tt[i] + SERIES.sp[i]);
+  SERIES.total = SERIES.ml.map((v, i) => v + SERIES.tt[i]);
   const PEDIDOS = [
     ["Sérum facial 30 ml", "Camila R.", 89.9, "há 12 min"], ["Kit hidratante 3 itens", "Rafael M.", 164, "há 1 h"],
     ["Protetor solar FPS 50", "Juliana P.", 59.9, "há 2 h"], ["Máscara capilar 300 g", "Bruno S.", 74.5, "há 3 h"],
@@ -394,6 +393,28 @@
   $("#login-tiktok").addEventListener("click", () => { location.href = API + "/integrations/tiktok/login"; });
   $("#login-ml").addEventListener("click", () => { location.href = API + "/integrations/mercadolivre/login"; });
   $("#login-demo").addEventListener("click", () => { $("#login").hidden = true; });
+
+  // Entrar com Google: preencha o ID do cliente (público) criado no Google Cloud e o botão aparece
+  const GOOGLE_CLIENT_ID = "";
+  function iniciarGoogle() {
+    if (!GOOGLE_CLIENT_ID) return;
+    const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+    s.onload = () => {
+      if (!window.google || !google.accounts) return;
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: async (resp) => {
+        $("#login-msg").textContent = "Entrando com Google…";
+        try {
+          const r = await fetch(API + "/auth/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential: resp.credential }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) { $("#login-msg").textContent = typeof d.detail === "string" ? d.detail : "Não foi possível entrar com o Google."; return; }
+          entrarComToken(d.access_token, d.name);
+        } catch (e) { $("#login-msg").textContent = "Sem conexão com o servidor. Tente de novo."; }
+      } });
+      const box = $("#g-btn"); box.hidden = false;
+      google.accounts.id.renderButton(box, { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", locale: "pt-BR", width: Math.min(380, box.parentElement.clientWidth) });
+    };
+    document.head.append(s);
+  }
 
   let modo = "entrar";
   document.querySelectorAll("#modo-conta button").forEach((b) => b.addEventListener("click", () => {
@@ -502,6 +523,7 @@
     setTimeout(() => { box.hidden = true; $("#toast-undo").hidden = false; }, 4000);
   }
 
+  iniciarGoogle();
   iniciarReal();
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
