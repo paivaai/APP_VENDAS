@@ -416,15 +416,20 @@
     $("#view-loja .lead-text").textContent = "Pedidos reais da sua conta. Nomes e dados dos compradores não aparecem aqui.";
   }
 
+  $("#sair").addEventListener("click", () => { gravarToken(null); tokenMem = null; location.reload(); });
+
   async function iniciarReal() {
     if (!token()) { mostrarLogin(); return; }
+    const pill0 = document.querySelector(".demo-pill"); pill0.textContent = "Carregando…"; pill0.classList.add("skel");
     try {
       const [tt, ml] = await Promise.all([api("/orders/"), api("/integrations/mercadolivre/orders").catch((e) => { if (e.sessao) throw e; return []; })]);
       tt.forEach((o) => (o.channel = "TikTok Shop"));
       const pedidos = tt.concat(ml).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!pedidos.length) { document.querySelector(".demo-pill").textContent = "Loja conectada, sem pedidos"; }
       renderLojaReal(pedidos);
-      const pill = document.querySelector(".demo-pill");
+      const pill = document.querySelector(".demo-pill"); pill.classList.remove("skel");
+      $("#sair").hidden = false;
+      api("/integrations/mercadolivre/me").then((me) => { if (me.nickname) $("#saudacao").textContent = "Olá, " + me.nickname; }).catch(() => {});
       pill.textContent = "Loja conectada"; pill.classList.add("real");
       pill.title = "Pedidos reais. As decisões da aba Hoje ainda são exemplos.";
       if (tt.length) { CANAIS[1].s = "Conectado: sua loja"; CANAIS[1].note = tt.length + " pedidos lidos agora da sua conta do TikTok Shop."; }
@@ -432,7 +437,7 @@
       renderCanais();
     } catch (e) {
       if (e.sessao) { gravarToken(null); tokenMem = null; mostrarLogin("Sua sessão expirou. Entre de novo."); }
-      else { const p = document.querySelector(".demo-pill"); p.textContent = "Sem conexão com a loja"; }
+      else { const p = document.querySelector(".demo-pill"); p.classList.remove("skel"); p.textContent = "Sem conexão com a loja"; }
     }
   }
 

@@ -179,10 +179,19 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-.login{position:fixed;inset:0;z-index:20;background:var(--page);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.login{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--tape) 14%,var(--page)),var(--page) 70%);display:flex;align-items:center;justify-content:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));overflow:auto}
 .login[hidden]{display:none}
 .login-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
-.login-box h1{font:700 28px/1.15 var(--display);letter-spacing:-.01em}
-.login-box .btn{width:100%}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.login-mark{background:var(--ink)}
+.login-mark::before,.login-mark::after{background:var(--page)}
+.login-box h1{font:700 30px/1.12 var(--display);letter-spacing:-.015em}
+.login-box .btn{width:100%;min-height:52px;font-size:17px}
+.login-why{display:flex;flex-direction:column;gap:10px;margin:8px 0 2px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:14.5px;color:var(--slate)}
+.login-why b{color:var(--ink)}
 .login-demo{background:none;border:0;color:var(--slate);text-decoration:underline;padding:12px;min-height:44px;cursor:pointer}
+.login-demo[hidden]{display:none}
 .demo-pill.real{background:var(--ok);color:#fff}
+.skel{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
