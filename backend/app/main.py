@@ -1,28 +1,37 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from app.database import Base, engine, get_db
-from app.auth.utils import get_current_user
-from app.agents.orchestrator import PreSaleAgent
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.auth.router import router as auth_router
+from app.auth.signup import router as signup_router  # LINK_SOCIAL
+from app.integrations.tiktok.router import router as tiktok_router
+from app.orders.router import router as orders_router
+from app.integrations.mercadolivre.router import router as mercadolivre_router
+from app.inventory.router import router as inventory_router
+from app.decisions.router import router as decisions_router
 from app.integrations.bling.router import router as bling_router
 
-app = FastAPI(title="PDP — Paiva AI Decision Platform")
+app = FastAPI(title="Paiva AI Decision Platform", version="1.0.0")
 
-if engine is not None:
-    Base.metadata.create_all(engine)  # TODO: trocar por Alembic
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(signup_router, prefix="/auth", tags=["auth"])
+app.include_router(tiktok_router, prefix="/integrations/tiktok", tags=["tiktok"])
+app.include_router(orders_router, prefix="/orders", tags=["orders"])
+app.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
+app.include_router(bling_router, prefix="/integrations/bling", tags=["bling"])
+app.include_router(decisions_router, prefix="/decisions", tags=["decisions"])
+app.include_router(mercadolivre_router, prefix="/integrations/mercadolivre", tags=["mercadolivre"])
+
+@app.get("/")
+def root():
+    return {"status": "ok", "app": "Paiva AI Decision Platform"}
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
-
-
-app.include_router(bling_router, prefix="/integrations/bling", tags=["bling"])
-# TODO: auth (register/login), mercadolivre, tiktok, shopee — recuperar da VPS.
-
-
-@app.post("/agents/pre-sale/register", tags=["agents"])
-def pre_sale_register(payload: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """payload: {"marketplace": "shopee", "row": {...}}"""
-    return PreSaleAgent().process_product_row(
-        payload["row"], payload["marketplace"], user.tenant_id, db
-    )
+    return {"status": "healthy"}

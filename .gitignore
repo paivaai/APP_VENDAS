@@ -19,3 +19,14 @@ node_modules/
 .DS_Store
 *.log
 *.backup
+.env*
+!.env.example
+_vendor/
+node_modules/
+.next/
+__pycache__/
+*.pyc
+*.bak*
+*.backup
+*.log
+.token_enc_key

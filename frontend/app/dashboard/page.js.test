@@ -1,0 +1,160 @@
+'use client'
+
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+const DashboardPage = () => {
+  const [activeTab, setActiveTab] = useState('tiktok')
+
+  const platforms = {
+    tiktok: {
+      name: 'TikTok',
+      icon: '🎬',
+      cards: [
+        { title: 'Vídeos', value: '1.2K', trend: '+15%' },
+        { title: 'Engajamento', value: '5.8K', trend: '+8%' },
+        { title: 'Seguidores', value: '45K', trend: '+22%' },
+        { title: 'Taxa de Conversão', value: '3.2%', trend: '+1.2%' }
+      ]
+    },
+    mercado_livre: {
+      name: 'Mercado Livre',
+      icon: '🏪',
+      cards: [
+        { title: 'Produtos', value: '342', trend: '+5%' },
+        { title: 'Vendas', value: '1.8K', trend: '+18%' },
+        { title: 'Avaliação', value: '4.8★', trend: 'Estável' },
+        { title: 'Receita', value: 'R$ 125K', trend: '+32%' }
+      ]
+    },
+    shopee: {
+      name: 'Shopee',
+      icon: '🛍️',
+      cards: [
+        { title: 'Produtos', value: '287', trend: '+3%' },
+        { title: 'Vendas', value: '924', trend: '+12%' },
+        { title: 'Avaliação', value: '4.7★', trend: 'Estável' },
+        { title: 'Receita', value: 'R$ 87K', trend: '+24%' }
+      ]
+    },
+    shein: {
+      name: 'Shein',
+      icon: '👗',
+      cards: [
+        { title: 'Produtos', value: '512', trend: '+8%' },
+        { title: 'Vendas', value: '2.1K', trend: '+26%' },
+        { title: 'Avaliação', value: '4.6★', trend: '+0.1' },
+        { title: 'Receita', value: 'R$ 156K', trend: '+41%' }
+      ]
+    }
+  }
+
+  const orders = [
+    { id: '#ORD001', platform: 'TikTok', cliente: 'João Silva', status: 'Entregue', data: '2024-06-15' },
+    { id: '#ORD002', platform: 'Mercado Livre', cliente: 'Maria Santos', status: 'Processando', data: '2024-06-16' },
+    { id: '#ORD003', platform: 'Shopee', cliente: 'Carlos Lima', status: 'Enviado', data: '2024-06-16' },
+    { id: '#ORD004', platform: 'Shein', cliente: 'Ana Costa', status: 'Aguardando', data: '2024-06-17' },
+    { id: '#ORD005', platform: 'TikTok', cliente: 'Pedro Oliveira', status: 'Entregue', data: '2024-06-15' }
+  ]
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Entregue': return 'bg-green-100 text-green-800'
+      case 'Processando': return 'bg-blue-100 text-blue-800'
+      case 'Enviado': return 'bg-purple-100 text-purple-800'
+      case 'Aguardando': return 'bg-yellow-100 text-yellow-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Dashboard Multi-Canal</h1>
+          <p className="text-slate-600">Gerenciador unificado de vendas - TikTok, Mercado Livre, Shopee e Shein</p>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="tiktok" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white shadow-md p-1 rounded-lg">
+            <TabsTrigger value="tiktok" className="flex items-center gap-2">
+              <span>🎬</span> TikTok
+            </TabsTrigger>
+            <TabsTrigger value="mercado_livre" className="flex items-center gap-2">
+              <span>🏪</span> Mercado Livre
+            </TabsTrigger>
+            <TabsTrigger value="shopee" className="flex items-center gap-2">
+              <span>🛍️</span> Shopee
+            </TabsTrigger>
+            <TabsTrigger value="shein" className="flex items-center gap-2">
+              <span>👗</span> Shein
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab Contents */}
+          {Object.entries(platforms).map(([key, platform]) => (
+            <TabsContent key={key} value={key} className="mt-0">
+              {/* Cards Section */}
+              <div className="grid grid-cols-4 gap-4 mb-8">
+                {platform.cards.map((card, idx) => (
+                  <Card key={idx} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold text-slate-600">{card.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-slate-900 mb-1">{card.value}</div>
+                      <Badge className={`text-xs ${card.trend.includes('-') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {card.trend}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Orders Table */}
+              <Card className="bg-white shadow-md">
+                <CardHeader>
+                  <CardTitle>Pedidos Recentes - {platform.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-slate-200 bg-slate-50">
+                        <tr>
+                          <th className="text-left p-3 font-semibold text-slate-700">ID</th>
+                          <th className="text-left p-3 font-semibold text-slate-700">Cliente</th>
+                          <th className="text-left p-3 font-semibold text-slate-700">Status</th>
+                          <th className="text-left p-3 font-semibold text-slate-700">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.filter(o => o.platform === platform.name).map((order) => (
+                          <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50">
+                            <td className="p-3 font-mono text-blue-600">{order.id}</td>
+                            <td className="p-3 text-slate-700">{order.cliente}</td>
+                            <td className="p-3">
+                              <Badge className={getStatusColor(order.status)}>
+                                {order.status}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-slate-600">{order.data}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+
+export default DashboardPage

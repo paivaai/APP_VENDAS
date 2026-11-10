@@ -1,15 +1,13 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
 
-# Lê o ambiente dentro da função: os.getenv no import já retornou None antes.
-def _url() -> str:
-    return os.getenv("DATABASE_URL", "")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(_url(), pool_pre_ping=True) if _url() else None
-SessionLocal = sessionmaker(bind=engine, autoflush=False) if engine else None
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
 
 def get_db():
     db = SessionLocal()

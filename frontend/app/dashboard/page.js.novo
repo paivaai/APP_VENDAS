@@ -1,0 +1,225 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const API = 'https://api.pdp.paivaai.com.br'
+
+export default function Dashboard() {
+  const [user, setUser] = useState(null)
+  const [accounts, setAccounts] = useState([])
+  const [orders, setOrders] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) { router.push('/login'); return }
+    loadData(token)
+    // auto-sync se vier de ?connected=true
+    if (window.location.search.includes('connected=true')) {
+      setTimeout(() => handleSync(), 3000)
+    }
+  }, [])
+
+  async function loadData(token) {
+    const h = { Authorization: `Bearer ${token}` }
+    try {
+      const [uR, aR, oR, pR] = await Promise.all([
+        fetch(`${API}/auth/me`, {headers:h}),
+        fetch(`${API}/integrations/tiktok/accounts`, {headers:h}),
+        fetch(`${API}/orders/`, {headers:h}),
+        fetch(`${API}/inventory/`, {headers:h}),
+      ])
+      if (!uR.ok) { router.push('/login'); return }
+      setUser(await uR.json())
+      setAccounts(await aR.json())
+      setOrders(await oR.json())
+      setProducts(await pR.json())
+    } catch(e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  async function connectTikTok() {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${API}/integrations/tiktok/connect`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    window.location.href = data.auth_url
+  }
+
+  async function handleSync() {
+    const token = localStorage.getItem('token')
+    setSyncing(true)
+    try {
+      const res = await fetch(`${API}/integrations/tiktok/sync`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      await loadData(token)
+      if (data.results) {
+        const r = data.results[0]
+        alert(`✅ Sync concluído!\nProdutos: ${r.products || 0}\nPedidos: ${r.orders || 0}`)
+      }
+    } catch(e) {
+      alert('Erro no sync. Verifique a conexão TikTok.')
+    } finally { setSyncing(false) }
+  }
+
+  function logout() {
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
+
+  if (loading) return (
+    <div style={{minHeight:'100vh',background:'#030712',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{color:'#a78bfa',fontSize:'1.1rem'}}>Carregando...</div>
+    </div>
+  )
+
+  const lowStock = products.filter(p => p.stock !== null && p.stock < 10)
+
+  const s = {
+    page: {minHeight:'100vh',background:'#030712',color:'white'},
+    header: {borderBottom:'1px solid #1f2937',padding:'1rem 1.5rem',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'},
+    logoWrap: {display:'flex',alignItems:'center',gap:'0.75rem'},
+    logoIcon: {width:'32px',height:'32px',background:'#7c3aed',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0},
+    logoText: {fontSize:'1.1rem',fontWeight:'700'},
+    headerRight: {display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'},
+    email: {color:'#9ca3af',fontSize:'0.875rem'},
+    btnPurple: {background:'#7c3aed',border:'none',borderRadius:'8px',padding:'0.5rem 1rem',color:'white',fontSize:'0.875rem',fontWeight:'600',cursor:'pointer'},
+    btnGreen: {background:'#059669',border:'none',borderRadius:'8px',padding:'0.5rem 1rem',color:'white',fontSize:'0.875rem',fontWeight:'600',cursor:'pointer'},
+    btnGhost: {background:'none',border:'none',color:'#9ca3af',fontSize:'0.875rem',cursor:'pointer'},
+    main: {maxWidth:'1100px',margin:'0 auto',padding:'2rem 1.5rem'},
+    connectBox: {background:'#111827',border:'2px dashed #374151',borderRadius:'16px',padding:'3rem',textAlign:'center',marginBottom:'2rem'},
+    connectTitle: {fontSize:'1.25rem',fontWeight:'600',marginBottom:'0.5rem'},
+    connectSub: {color:'#9ca3af',fontSize:'0.875rem',marginBottom:'1.5rem'},
+    connectedBar: {background:'#111827',border:'1px solid #065f46',borderRadius:'12px',padding:'0.75rem 1rem',marginBottom:'2rem',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.5rem'},
+    connectedLeft: {display:'flex',alignItems:'center',gap:'0.75rem'},
+    dot: {width:'8px',height:'8px',borderRadius:'50%',background:'#34d399',flexShrink:0},
+    connectedText: {color:'#34d399',fontSize:'0.875rem',fontWeight:'500'},
+    grid: {display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem',marginBottom:'2rem'},
+    statCard: {background:'#111827',border:'1px solid #1f2937',borderRadius:'16px',padding:'1.5rem'},
+    statCardRed: {background:'#111827',border:'1px solid #7f1d1d',borderRadius:'16px',padding:'1.5rem'},
+    statLabel: {color:'#9ca3af',fontSize:'0.875rem',marginBottom:'0.25rem'},
+    statLabelRed: {color:'#f87171',fontSize:'0.875rem',marginBottom:'0.25rem'},
+    statNum: {fontSize:'2rem',fontWeight:'700'},
+    statNumRed: {fontSize:'2rem',fontWeight:'700',color:'#f87171'},
+    alertBox: {background:'#111827',border:'1px solid #7f1d1d',borderRadius:'16px',padding:'1.5rem',marginBottom:'2rem'},
+    alertTitle: {color:'#f87171',fontWeight:'600',marginBottom:'1rem'},
+    row: {display:'flex',justifyContent:'space-between',alignItems:'center',background:'#1f2937',borderRadius:'8px',padding:'0.75rem 1rem',marginBottom:'0.5rem'},
+    tableBox: {background:'#111827',border:'1px solid #1f2937',borderRadius:'16px',padding:'1.5rem'},
+    tableTitle: {fontWeight:'600',color:'#e5e7eb',marginBottom:'1rem'},
+    badge: {fontSize:'0.75rem',padding:'0.2rem 0.6rem',borderRadius:'999px',background:'#374151',color:'#9ca3af'},
+    empty: {color:'#6b7280',fontSize:'0.875rem',textAlign:'center',padding:'2rem 0'},
+    syncingOverlay: {position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000},
+    syncingBox: {background:'#111827',border:'1px solid #374151',borderRadius:'16px',padding:'2rem',textAlign:'center'},
+  }
+
+  return (
+    <div style={s.page}>
+      {syncing && (
+        <div style={s.syncingOverlay}>
+          <div style={s.syncingBox}>
+            <div style={{fontSize:'2rem',marginBottom:'1rem'}}>⟳</div>
+            <div style={{color:'white',fontWeight:'600'}}>Importando dados do TikTok...</div>
+            <div style={{color:'#9ca3af',fontSize:'0.875rem',marginTop:'0.5rem'}}>Isso pode levar alguns segundos</div>
+          </div>
+        </div>
+      )}
+
+      <header style={s.header}>
+        <div style={s.logoWrap}>
+          <div style={s.logoIcon}>
+            <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span style={s.logoText}>Paiva AI</span>
+        </div>
+        <div style={s.headerRight}>
+          <span style={s.email}>{user?.email}</span>
+          {accounts.length > 0 && (
+            <button style={s.btnGreen} onClick={handleSync} disabled={syncing}>
+              {syncing ? '⟳ Sincronizando...' : '↺ Sincronizar'}
+            </button>
+          )}
+          <button style={s.btnPurple} onClick={() => router.push('/recommendations')}>✨ Recomendações</button>
+          <button style={s.btnGhost} onClick={logout}>Sair</button>
+        </div>
+      </header>
+
+      <main style={s.main}>
+        {accounts.length === 0 ? (
+          <div style={s.connectBox}>
+            <div style={{fontSize:'2.5rem',marginBottom:'1rem'}}>🛍️</div>
+            <div style={s.connectTitle}>Conecte sua conta TikTok Shop</div>
+            <div style={s.connectSub}>Autorize o acesso para importar pedidos, estoque e receber recomendações de IA</div>
+            <button style={{...s.btnPurple,padding:'0.875rem 2rem',fontSize:'1rem',borderRadius:'12px'}} onClick={connectTikTok}>
+              Conectar TikTok Shop
+            </button>
+          </div>
+        ) : (
+          <div style={s.connectedBar}>
+            <div style={s.connectedLeft}>
+              <div style={s.dot}></div>
+              <span style={s.connectedText}>✅ {accounts[0].shop_name || accounts[0].shop_id} conectado</span>
+            </div>
+            <span style={{color:'#6b7280',fontSize:'0.75rem'}}>Última sync ao conectar</span>
+          </div>
+        )}
+
+        <div style={s.grid}>
+          <div style={s.statCard}>
+            <div style={s.statLabel}>📦 Total de pedidos</div>
+            <div style={s.statNum}>{orders.length}</div>
+          </div>
+          <div style={s.statCard}>
+            <div style={s.statLabel}>🛒 Produtos</div>
+            <div style={s.statNum}>{products.length}</div>
+          </div>
+          <div style={s.statCardRed}>
+            <div style={s.statLabelRed}>⚠️ Estoque baixo</div>
+            <div style={s.statNumRed}>{lowStock.length}</div>
+          </div>
+          <div style={s.statCard}>
+            <div style={s.statLabel}>💰 Receita (30d)</div>
+            <div style={s.statNum}>R$ {orders.reduce((a,o) => a + (o.total||0), 0).toFixed(0)}</div>
+          </div>
+        </div>
+
+        {lowStock.length > 0 && (
+          <div style={s.alertBox}>
+            <div style={s.alertTitle}>⚠️ Produtos com estoque baixo</div>
+            {lowStock.map(p => (
+              <div key={p.id} style={s.row}>
+                <span style={{fontSize:'0.875rem'}}>{p.name}</span>
+                <span style={{color:'#f87171',fontSize:'0.875rem',fontWeight:'600'}}>{p.stock} unid.</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={s.tableBox}>
+          <div style={s.tableTitle}>📋 Últimos pedidos</div>
+          {orders.length === 0 ? (
+            <div style={s.empty}>
+              {accounts.length > 0 ? 'Clique em "Sincronizar" para importar os pedidos' : 'Conecte o TikTok Shop para ver seus pedidos'}
+            </div>
+          ) : (
+            orders.slice(0,10).map(o => (
+              <div key={o.id} style={s.row}>
+                <span style={{fontSize:'0.875rem',color:'#d1d5db'}}>#{o.tiktok_order_id}</span>
+                <span style={s.badge}>{o.status}</span>
+                <span style={{fontSize:'0.875rem',fontWeight:'500'}}>R$ {o.total?.toFixed(2)}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
