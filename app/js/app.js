@@ -484,6 +484,73 @@
   }
   function irParaCanais() { const t = document.querySelector('.tab[data-view="canais"]'); if (t) t.click(); }
 
+  /* ---------- agentes: decisões geradas a partir dos pedidos reais (só leitura) ---------- */
+  function gerarDecisoes(pedidos, canaisTxt) {
+    const dia = 86400000, agora = Date.now();
+    const dt = (o) => new Date(String(o.created_at).replace(" ", "T")).getTime();
+    const v = (o) => Number(o.total || 0);
+    const sem1 = pedidos.filter((o) => agora - dt(o) <= 7 * dia);
+    const sem0 = pedidos.filter((o) => agora - dt(o) > 7 * dia && agora - dt(o) <= 14 * dia);
+    const cancel = sem1.filter((o) => /cancel|invalid|return|refund/i.test(String(o.status)));
+    const pend = pedidos.filter((o) => /unpaid|payment_required|payment_in_process|pending/i.test(String(o.status)) && agora - dt(o) > dia);
+    const ok1 = sem1.filter((o) => !cancel.includes(o));
+    const fat1 = ok1.reduce((a, o) => a + v(o), 0), fat0 = sem0.reduce((a, o) => a + v(o), 0);
+    const semana = new Date().toISOString().slice(0, 10);
+    const base = { channel: canaisTxt, waiting: "análise de agora" };
+    const out = [];
+    if (cancel.length) {
+      const t = cancel.reduce((a, o) => a + v(o), 0);
+      out.push(Object.assign({}, base, { id: "r-cancel-" + semana, crit: "alta",
+        title: cancel.length + (cancel.length === 1 ? " pedido cancelado" : " pedidos cancelados") + " nos últimos 7 dias",
+        detail: "Somam " + brl.format(t) + ". Cancelamentos e devoluções pesam na reputação da loja.",
+        options: [
+          { k: "A", label: "Revisar os motivos e falar com os compradores", effect: "O agente separa os pedidos e prepara a mensagem de contato para você aprovar.", value: Math.round(t * 0.4) },
+          { k: "B", label: "Só acompanhar por mais uma semana", effect: "Não muda nada agora. Se subir, o agente avisa de novo.", value: 0 }],
+        more: "Pedidos afetados: " + cancel.slice(0, 5).map((o) => "···" + String(o.order_id || o.id).slice(-4)).join(", ") + ". Dados do comprador não são lidos." }));
+    }
+    if (pend.length) {
+      const t = pend.reduce((a, o) => a + v(o), 0);
+      out.push(Object.assign({}, base, { id: "r-pend-" + semana, crit: "normal", waiting: "há mais de 24 h",
+        title: pend.length + (pend.length === 1 ? " pedido" : " pedidos") + " sem pagamento confirmado",
+        detail: "Somam " + brl.format(t) + " e estão parados há mais de um dia.",
+        options: [
+          { k: "A", label: "Enviar um lembrete de pagamento", effect: "O agente prepara a mensagem. Você aprova antes de sair.", value: Math.round(t * 0.35) },
+          { k: "B", label: "Deixar expirar sozinho", effect: "Sem custo, mas o estoque fica reservado até expirar.", value: 0 }],
+        more: "Lembretes costumam recuperar parte desses pedidos quando enviados no mesmo dia." }));
+    }
+    if (fat0 > 0 && fat1 < fat0 * 0.8) {
+      const q = Math.round((1 - fat1 / fat0) * 100);
+      out.push(Object.assign({}, base, { id: "r-queda-" + semana, crit: "alta",
+        title: "As vendas caíram " + q + "% contra a semana anterior",
+        detail: "Esta semana: " + brl.format(fat1) + ". Semana anterior: " + brl.format(fat0) + ".",
+        options: [
+          { k: "A", label: "Revisar preço e título dos anúncios que mais vendiam", effect: "O agente lista os anúncios para você ajustar.", value: Math.round(fat0 - fat1) },
+          { k: "B", label: "Esperar mais uma semana", effect: "Vendas oscilam. Se continuar caindo, o agente avisa.", value: 0 }],
+        more: "A comparação usa os pedidos lidos agora das suas contas conectadas." }));
+    } else if (fat1 > 0) {
+      const por = {};
+      ok1.forEach((o) => { const d = DIAS[new Date(dt(o)).getDay()]; por[d] = (por[d] || 0) + v(o); });
+      const top = Object.entries(por).sort((a, b) => b[1] - a[1])[0];
+      out.push(Object.assign({}, base, { id: "r-forte-" + semana, crit: "normal",
+        title: "Seu melhor dia foi " + top[0] + ", com " + brl.format(top[1]),
+        detail: "Em 7 dias a loja faturou " + brl.format(fat1) + " em " + ok1.length + (ok1.length === 1 ? " pedido." : " pedidos."),
+        options: [
+          { k: "A", label: "Reforçar anúncios e cupom nesse dia da semana", effect: "O agente sugere o cupom. Nada é criado sem a sua aprovação.", value: Math.round(top[1] * 0.1) },
+          { k: "B", label: "Manter como está", effect: "Sem mudança.", value: 0 }],
+        more: "Dia mais forte calculado só com os pedidos concluídos dos últimos 7 dias." }));
+    }
+    if (!out.length) {
+      out.push(Object.assign({}, base, { id: "r-vazio-" + semana, crit: "normal",
+        title: "Sem vendas nos últimos 7 dias",
+        detail: "A conta está conectada e lida com sucesso, mas não há pedidos recentes.",
+        options: [
+          { k: "A", label: "Revisar preço e fotos dos anúncios", effect: "O agente lista os anúncios sem venda para você revisar.", value: 0 },
+          { k: "B", label: "Aguardar", effect: "Sem mudança.", value: 0 }],
+        more: "Quando houver pedidos, as decisões passam a aparecer aqui automaticamente." }));
+    }
+    return out;
+  }
+
   async function iniciarReal() {
     if (!token()) { mostrarLogin(aviso); return; }
     const pill = document.querySelector(".demo-pill"); pill.textContent = "Carregando…"; pill.classList.add("skel");
@@ -510,8 +577,13 @@
       CANAIS[1].note = ttOn ? tt.length + " pedidos lidos agora da sua conta do TikTok Shop." : "Conecte a sua loja do TikTok Shop. Você autoriza na página do TikTok.";
       CANAIS[0].link = "/integrations/mercadolivre/link"; CANAIS[1].link = "/integrations/tiktok/link";
       renderCanais();
+      if (mlOn || ttOn) {
+        DECISIONS.splice(0, DECISIONS.length, ...gerarDecisoes(pedidos, mlOn && ttOn ? "Todos os canais" : mlOn ? "Mercado Livre" : "TikTok Shop"));
+        $("#view-hoje .lead-text").textContent = "Os agentes analisaram os seus pedidos reais. Nada é alterado na sua loja sem a sua aprovação.";
+        renderHoje();
+      }
       pill.textContent = mlOn || ttOn ? "Loja conectada" : "Conta criada"; pill.classList.add("real");
-      pill.title = "Pedidos reais. As decisões da aba Hoje ainda são exemplos.";
+      pill.title = "Pedidos reais. As decisões da aba Hoje vêm desses pedidos.";
       if (!mlOn && !ttOn) { $("#view-canais .lead-text").textContent = "Sua conta está pronta. Conecte um marketplace para ver os seus pedidos reais."; irParaCanais(); }
       else if (aviso) { toastAviso(aviso); }
     } catch (e) {
