@@ -385,7 +385,7 @@
     $("#login-msg").textContent = msg || "";
   }
   $("#login-tiktok").addEventListener("click", () => { location.href = API + "/integrations/tiktok/login"; });
-  $("#login-ml").addEventListener("click", () => { $("#login-msg").textContent = "A entrada com Mercado Livre chega em breve. Por enquanto, use o TikTok Shop."; });
+  $("#login-ml").addEventListener("click", () => { location.href = API + "/integrations/mercadolivre/login"; });
   $("#login-demo").addEventListener("click", () => { $("#login").hidden = true; });
 
   // nenhum dado pessoal do comprador é buscado nem mostrado: só id curto, status, valor e hora
@@ -408,23 +408,28 @@
     });
     const ul = $("#pedidos"); ul.replaceChildren();
     pedidos.slice(0, 8).forEach((o) => ul.append(el("li", {}, [
-      el("span", { class: "o-name", text: "Pedido ···" + String(o.tiktok_order_id || o.id).slice(-4) }),
-      el("span", { class: "o-sub", text: (o.status || "sem status").toLowerCase().replace(/_/g, " ") }),
+      el("span", { class: "o-name", text: "Pedido ···" + String(o.order_id || o.tiktok_order_id || o.id).slice(-4) }),
+      el("span", { class: "o-sub", text: (o.channel || "") + " · " + (o.status || "sem status").toLowerCase().replace(/_/g, " ") }),
       el("span", { class: "o-val", text: brl2.format(Number(o.total || 0)) })
     ])));
     $("#h-loja").textContent = "Vendas da sua loja";
-    $("#view-loja .lead-text").textContent = "Pedidos reais do TikTok Shop. Nomes e dados dos compradores não aparecem aqui.";
+    $("#view-loja .lead-text").textContent = "Pedidos reais da sua conta. Nomes e dados dos compradores não aparecem aqui.";
   }
 
   async function iniciarReal() {
     if (!token()) { mostrarLogin(); return; }
     try {
-      const pedidos = await api("/orders/");
+      const [tt, ml] = await Promise.all([api("/orders/"), api("/integrations/mercadolivre/orders").catch((e) => { if (e.sessao) throw e; return []; })]);
+      tt.forEach((o) => (o.channel = "TikTok Shop"));
+      const pedidos = tt.concat(ml).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      if (!pedidos.length) { document.querySelector(".demo-pill").textContent = "Loja conectada, sem pedidos"; }
       renderLojaReal(pedidos);
       const pill = document.querySelector(".demo-pill");
       pill.textContent = "Loja conectada"; pill.classList.add("real");
       pill.title = "Pedidos reais. As decisões da aba Hoje ainda são exemplos.";
-      CANAIS[1].s = "Conectado: sua loja"; CANAIS[1].note = pedidos.length + " pedidos lidos agora da sua conta do TikTok Shop."; renderCanais();
+      if (tt.length) { CANAIS[1].s = "Conectado: sua loja"; CANAIS[1].note = tt.length + " pedidos lidos agora da sua conta do TikTok Shop."; }
+      if (ml.length) { CANAIS[0].s = "Conectado: sua loja"; CANAIS[0].note = ml.length + " pedidos lidos agora da sua conta do Mercado Livre."; }
+      renderCanais();
     } catch (e) {
       if (e.sessao) { gravarToken(null); tokenMem = null; mostrarLogin("Sua sessão expirou. Entre de novo."); }
       else { const p = document.querySelector(".demo-pill"); p.textContent = "Sem conexão com a loja"; }
