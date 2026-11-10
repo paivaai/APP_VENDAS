@@ -13,8 +13,11 @@ raiz = sys.argv[1]
 app = os.path.join(raiz, "app")
 
 CRYPTO = '''"""Colunas criptografadas (Fernet). Sem TOKEN_ENC_KEY no ambiente, grava em texto puro (compatível)."""
-import os
+import os, sys
 from sqlalchemy.types import TypeDecorator, Text
+
+# bibliotecas instaladas em /app/_vendor (pasta montada), assim sobrevivem a recriar o container
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "_vendor"))
 
 try:
     from cryptography.fernet import Fernet, InvalidToken
