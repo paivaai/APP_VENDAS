@@ -179,9 +179,9 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-.login{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--tape) 14%,var(--page)),var(--page) 70%);display:flex;align-items:center;justify-content:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));overflow:auto}
+.login{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--tape) 14%,var(--page)),var(--page) 70%);display:flex;padding:24px 16px calc(24px + env(safe-area-inset-bottom));overflow:auto}
 .login[hidden]{display:none}
-.login-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.login-box{margin:auto;width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
 .login-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .login-mark{background:var(--ink)}
 .login-mark::before,.login-mark::after{background:var(--page)}
@@ -197,3 +197,10 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 @media (prefers-reduced-motion:reduce){.skel{animation:none}}
 .orders .vazio{display:block;padding:16px;border:1px dashed var(--line);border-radius:12px}.orders .vazio .o-sub{display:block;margin-top:4px}
 .brand-logo{display:block;border-radius:8px}.login-logo{width:64px;height:64px;filter:drop-shadow(0 8px 14px rgba(20,40,140,.35))}.login-brand{gap:14px}.login-brand .brand-name{font-size:26px}
+.login-or{display:flex;align-items:center;gap:10px;color:var(--slate);font-size:13px;margin-top:4px}.login-or::before,.login-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.modo{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:10px;background:var(--line)}
+.modo button{border:0;background:transparent;border-radius:7px;padding:9px;font-weight:650;cursor:pointer;min-height:40px;color:var(--slate)}
+.modo button[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.conta{display:flex;flex-direction:column;gap:12px}
+.channels li .ch-btn{grid-column:2;justify-self:stretch;margin-top:10px}
+[hidden]{display:none!important}

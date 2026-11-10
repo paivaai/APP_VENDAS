@@ -272,7 +272,7 @@
   const CANAIS = [
     { n: "Mercado Livre", s: "Conectado", t: "ok", note: "Login autorizado testado de ponta a ponta. Lê pedidos, produtos e métricas." },
     { n: "TikTok Shop", s: "Conectado só para leitura", t: "ok", note: "Falta pedir a permissão de escrita para cadastrar e alterar produtos." },
-    { n: "Shopee, via Bling", s: "Aguardando liberação do Bling", t: "warn", note: "O app no Bling ainda está em desenvolvimento e só aceita o dono da conta. Falta homologar." },
+    { n: "Shopee", s: "Planejado", t: "off", note: "Entra depois do Mercado Livre e do TikTok Shop, com conexão direta." },
     { n: "WhatsApp", s: "Em configuração", t: "warn", note: "O servidor está instalado. Faltam as 3 conversas por loja: pré-venda, venda e pós-venda." },
     { n: "Claude, a IA dos agentes", s: "Ativo", t: "ok", note: "Modelo rápido para a rotina e modelo avançado para decisões difíceis. O consumo é registrado por loja." },
     { n: "Shein", s: "Planejado", t: "off", note: "Entra depois que Mercado Livre, TikTok e Shopee estiverem estáveis." }
@@ -284,7 +284,7 @@
       el("span", { class: "dot " + c.t, "aria-hidden": "true" }),
       el("div", {}, [el("div", { class: "ch-name", text: c.n }), el("div", { class: "ch-status " + c.t, text: c.s })]),
       el("p", { class: "ch-note", text: c.note })
-    ])));
+    ].concat(c.link && !c.on ? [el("button", { class: "btn btn-primary ch-btn", type: "button", text: "Conectar " + c.n, onclick: () => ligar(c.link) })] : []))));
   }
 
   /* ---------- aba Loja (números fictícios, sempre iguais) ---------- */
@@ -372,9 +372,16 @@
   const m = /[#&]token=([^&]+)/.exec(location.hash);
   if (m) { tokenMem = decodeURIComponent(m[1]); gravarToken(tokenMem); history.replaceState(null, "", location.pathname + location.search); }
   const token = () => tokenMem || lerToken();
+  let aviso = "";
+  const hv = /[#&](verificado|conectado)=([^&]+)/.exec(location.hash);
+  if (hv) {
+    aviso = hv[1] === "verificado" ? (hv[2] === "1" ? "E-mail confirmado! Agora entre com o seu e-mail e a senha." : "Este link de confirmação não é válido ou já foi usado.") : "Canal conectado com sucesso.";
+    history.replaceState(null, "", location.pathname + location.search);
+  }
 
-  async function api(caminho) {
-    const r = await fetch(API + caminho, { headers: { Authorization: "Bearer " + token() } });
+  async function api(caminho, opts) {
+    const o = opts || {};
+    const r = await fetch(API + caminho, { method: o.method || "GET", headers: Object.assign({ Authorization: "Bearer " + token() }, o.body ? { "Content-Type": "application/json" } : {}), body: o.body ? JSON.stringify(o.body) : undefined });
     if (r.status === 401) { const e = new Error("sessao"); e.sessao = true; throw e; }
     if (!r.ok) throw new Error("http " + r.status);
     return r.json();
@@ -387,6 +394,36 @@
   $("#login-tiktok").addEventListener("click", () => { location.href = API + "/integrations/tiktok/login"; });
   $("#login-ml").addEventListener("click", () => { location.href = API + "/integrations/mercadolivre/login"; });
   $("#login-demo").addEventListener("click", () => { $("#login").hidden = true; });
+
+  let modo = "entrar";
+  document.querySelectorAll("#modo-conta button").forEach((b) => b.addEventListener("click", () => {
+    modo = b.dataset.m;
+    document.querySelectorAll("#modo-conta button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    $("#l-nome").hidden = modo !== "criar";
+    $("#c-ok").textContent = modo === "criar" ? "Criar minha conta" : "Entrar";
+    $("#c-senha").autocomplete = modo === "criar" ? "new-password" : "current-password";
+    $("#login-msg").textContent = "";
+  }));
+  function entrarComToken(t, nome) {
+    gravarToken(t); tokenMem = t; $("#login").hidden = true; if (nome) nomeConta = nome; iniciarReal();
+  }
+  let nomeConta = "";
+  $("#form-conta").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("#login-msg"), btn = $("#c-ok");
+    const email = $("#c-email").value.trim(), senha = $("#c-senha").value, nome = $("#c-nome").value.trim();
+    if (!email || !senha || (modo === "criar" && !nome)) { msg.textContent = "Preencha todos os campos."; return; }
+    btn.disabled = true; msg.textContent = "Um instante…";
+    try {
+      const r = await fetch(API + (modo === "criar" ? "/auth/signup" : "/auth/entrar"), { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modo === "criar" ? { name: nome, email, password: senha } : { email, password: senha }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { msg.textContent = typeof d.detail === "string" ? d.detail : "Confira os dados e tente de novo."; return; }
+      if (d.verificacao === "email") { msg.textContent = "Enviamos um e-mail para " + email + ". Abra a mensagem, toque em confirmar e volte aqui para entrar."; return; }
+      if (d.access_token) entrarComToken(d.access_token, d.name);
+    } catch (err) { msg.textContent = "Sem conexão com o servidor. Tente de novo."; }
+    finally { btn.disabled = false; }
+  });
 
   // nenhum dado pessoal do comprador é buscado nem mostrado: só id curto, status, valor e hora
   function renderLojaReal(pedidos) {
@@ -419,27 +456,50 @@
 
   $("#sair").addEventListener("click", () => { gravarToken(null); tokenMem = null; location.reload(); });
 
+  async function ligar(caminho) {
+    try { const d = await api(caminho); location.href = d.auth_url; }
+    catch (e) { if (e.sessao) { gravarToken(null); tokenMem = null; mostrarLogin("Sua sessão expirou. Entre de novo."); } }
+  }
+  function irParaCanais() { const t = document.querySelector('.tab[data-view="canais"]'); if (t) t.click(); }
+
   async function iniciarReal() {
-    if (!token()) { mostrarLogin(); return; }
-    const pill0 = document.querySelector(".demo-pill"); pill0.textContent = "Carregando…"; pill0.classList.add("skel");
+    if (!token()) { mostrarLogin(aviso); return; }
+    const pill = document.querySelector(".demo-pill"); pill.textContent = "Carregando…"; pill.classList.add("skel");
     try {
-      const [tt, ml] = await Promise.all([api("/orders/"), api("/integrations/mercadolivre/orders").catch((e) => { if (e.sessao) throw e; return []; })]);
+      const [tt, ml, me, contas, perfil] = await Promise.all([
+        api("/orders/"),
+        api("/integrations/mercadolivre/orders").catch((e) => { if (e.sessao) throw e; return []; }),
+        api("/integrations/mercadolivre/me").catch((e) => { if (e.sessao) throw e; return {}; }),
+        api("/integrations/tiktok/accounts").catch((e) => { if (e.sessao) throw e; return []; }),
+        api("/auth/perfil").catch((e) => { if (e.sessao) throw e; return {}; })
+      ]);
       tt.forEach((o) => (o.channel = "TikTok Shop"));
       const pedidos = tt.concat(ml).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-      if (!pedidos.length) { document.querySelector(".demo-pill").textContent = "Loja conectada, sem pedidos"; }
       renderLojaReal(pedidos);
-      const pill = document.querySelector(".demo-pill"); pill.classList.remove("skel");
-      $("#sair").hidden = false;
-      api("/integrations/mercadolivre/me").then((me) => { if (me.nickname) $("#saudacao").textContent = "Olá, " + me.nickname; }).catch(() => {});
-      pill.textContent = "Loja conectada"; pill.classList.add("real");
-      pill.title = "Pedidos reais. As decisões da aba Hoje ainda são exemplos.";
-      if (tt.length) { CANAIS[1].s = "Conectado: sua loja"; CANAIS[1].note = tt.length + " pedidos lidos agora da sua conta do TikTok Shop."; }
-      if (ml.length) { CANAIS[0].s = "Conectado: sua loja"; CANAIS[0].note = ml.length + " pedidos lidos agora da sua conta do Mercado Livre."; }
+      pill.classList.remove("skel"); $("#sair").hidden = false;
+      const nome = perfil.name || nomeConta || me.nickname;
+      if (nome) $("#saudacao").textContent = "Olá, " + nome;
+      const mlOn = !!me.connected, ttOn = contas.length > 0;
+      CANAIS[0].on = mlOn; CANAIS[1].on = ttOn;
+      CANAIS[0].t = mlOn ? "ok" : "warn"; CANAIS[1].t = ttOn ? "ok" : "warn";
+      CANAIS[0].s = mlOn ? "Conectado: sua loja" : "Não conectado";
+      CANAIS[0].note = mlOn ? ml.length + " pedidos lidos agora da sua conta " + (me.nickname || "") + "." : "Conecte a sua conta para ver os pedidos reais aqui. Você autoriza na página do Mercado Livre.";
+      CANAIS[1].s = ttOn ? "Conectado: sua loja" : "Não conectado";
+      CANAIS[1].note = ttOn ? tt.length + " pedidos lidos agora da sua conta do TikTok Shop." : "Conecte a sua loja do TikTok Shop. Você autoriza na página do TikTok.";
+      CANAIS[0].link = "/integrations/mercadolivre/link"; CANAIS[1].link = "/integrations/tiktok/link";
       renderCanais();
+      pill.textContent = mlOn || ttOn ? "Loja conectada" : "Conta criada"; pill.classList.add("real");
+      pill.title = "Pedidos reais. As decisões da aba Hoje ainda são exemplos.";
+      if (!mlOn && !ttOn) { $("#view-canais .lead-text").textContent = "Sua conta está pronta. Conecte um marketplace para ver os seus pedidos reais."; irParaCanais(); }
+      else if (aviso) { toastAviso(aviso); }
     } catch (e) {
       if (e.sessao) { gravarToken(null); tokenMem = null; mostrarLogin("Sua sessão expirou. Entre de novo."); }
-      else { const p = document.querySelector(".demo-pill"); p.classList.remove("skel"); p.textContent = "Sem conexão com a loja"; }
+      else { pill.classList.remove("skel"); pill.textContent = "Sem conexão com a loja"; }
     }
+  }
+  function toastAviso(t) {
+    const box = $("#toast"); $("#toast-text").textContent = t; $("#toast-undo").hidden = true; box.hidden = false;
+    setTimeout(() => { box.hidden = true; $("#toast-undo").hidden = false; }, 4000);
   }
 
   iniciarReal();
