@@ -15,13 +15,9 @@ jobs:
       - name: Sintaxe do backend
         run: python -m compileall -q backend/app
       - name: Validar docker-compose
-        run: docker compose -f docker-compose.yml config -q
-        env:
-          POSTGRES_USER: x
-          POSTGRES_PASSWORD: x
-          EVOLUTION_SERVER_URL: x
-          EVOLUTION_API_KEY: x
-          EVOLUTION_DB_NAME: x
+        run: |
+          cp .env.example .env   # só dentro do runner; o .env real nunca vai ao Git
+          docker compose -f docker-compose.yml config -q
       - name: Garantir que nenhum segredo foi commitado
         run: |
           if git ls-files | grep -E '(^|/)\.env$'; then echo "ERRO: .env versionado"; exit 1; fi
