@@ -569,6 +569,42 @@
     });
   }
 
+  /* ---------- avisos urgentes (push) ---------- */
+  function b64(s) { const p = "=".repeat((4 - (s.length % 4)) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, (c) => c.charCodeAt(0)); }
+  function chaveB64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  async function iniciarAvisos() {
+    const box = $("#avisos");
+    const pinta = (titulo, texto, botoes) => { box.hidden = false; box.replaceChildren(el("b", { text: titulo }), el("p", { text: texto }), ...(botoes || [])); };
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), instalado = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+    if (!("serviceWorker" in navigator && "PushManager" in window && "Notification" in window)) {
+      if (ios && !instalado) pinta("Avisos urgentes", "No iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início. Abra o app por lá para ativar os avisos.");
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready.catch(() => null);
+    if (!reg) return;
+    const sub = await reg.pushManager.getSubscription();
+    const teste = el("button", { class: "btn btn-line", type: "button", text: "Enviar aviso de teste", onclick: async (ev) => {
+      ev.currentTarget.disabled = true;
+      try { await api("/push/teste", { method: "POST" }); toastAviso("Aviso enviado. Ele chega em instantes."); } catch (e) { toastAviso("Não foi possível enviar o teste."); }
+      ev.currentTarget.disabled = false;
+    } });
+    if (sub && Notification.permission === "granted") { pinta("Avisos urgentes ativos", "Você será avisado neste aparelho quando chegar uma pergunta de comprador.", [teste]); return; }
+    if (Notification.permission === "denied") { pinta("Avisos bloqueados", "Libere as notificações do P-Vendas nas configurações do aparelho para receber os avisos urgentes."); return; }
+    pinta("Receba avisos urgentes", "Quando chegar uma pergunta de comprador, o app avisa na hora. Quem responde rápido vende mais.", [
+      el("button", { class: "btn btn-primary", type: "button", text: "Ativar avisos urgentes", onclick: async (ev) => {
+        ev.currentTarget.disabled = true;
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm !== "granted") { iniciarAvisos(); return; }
+          const k = (await (await fetch(API + "/push/chave")).json()).key;
+          const s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(k) });
+          await api("/push/assinar", { method: "POST", body: { endpoint: s.endpoint, p256dh: chaveB64(s.getKey("p256dh")), auth: chaveB64(s.getKey("auth")) } });
+          iniciarAvisos();
+        } catch (e) { toastAviso("Não foi possível ativar os avisos neste aparelho."); ev.currentTarget.disabled = false; }
+      } })
+    ]);
+  }
+
   async function iniciarReal() {
     if (!token()) { mostrarLogin(aviso); return; }
     const pill = document.querySelector(".demo-pill"); pill.textContent = "Carregando…"; pill.classList.add("skel");
@@ -602,6 +638,7 @@
         renderHoje();
       }
       pill.textContent = mlOn || ttOn ? "Loja conectada" : "Conta criada"; pill.classList.add("real");
+      iniciarAvisos();
       pill.title = "Pedidos reais. As decisões da aba Hoje vêm desses pedidos.";
       if (!mlOn && !ttOn) { $("#view-canais .lead-text").textContent = "Sua conta está pronta. Conecte um marketplace para ver os seus pedidos reais."; irParaCanais(); }
       else if (aviso) { toastAviso(aviso); }

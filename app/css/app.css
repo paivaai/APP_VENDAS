@@ -210,3 +210,8 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 .outras summary::-webkit-details-marker{display:none}
 .outras[open] summary{margin-bottom:8px}
 .outras > .btn{margin-bottom:10px}
+
+.avisos{margin:14px 0;padding:14px;border:1px solid var(--line,#d5dae4);border-radius:14px;background:rgba(255,255,255,.7)}
+.avisos b{display:block;margin-bottom:4px}
+.avisos p{margin:0 0 10px;font-size:14px;color:#566174}
+.avisos .btn{margin-top:4px}
