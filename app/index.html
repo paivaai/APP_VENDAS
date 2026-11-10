@@ -28,22 +28,25 @@
 <section id="login" class="login" hidden aria-labelledby="h-login">
   <div class="login-box">
     <div class="login-brand"><img class="brand-logo login-logo" src="icons/logo.svg" alt="" width="64" height="64"><span class="brand-name">P-Vendas</span></div>
-    <h1 id="h-login">Conecte a sua loja em um toque</h1>
-    <p class="lead-text">Entre com a conta do marketplace e veja os seus pedidos reais aqui.</p>
+    <h1 id="h-login">Entre com o Mercado Livre</h1>
+    <p class="lead-text">Use a mesma conta da sua loja. Você autoriza na página do Mercado Livre e volta para cá. Sem criar senha.</p>
     <button class="btn btn-primary btn-wide" id="login-ml" type="button">Entrar com Mercado Livre</button>
-    <button class="btn btn-line btn-wide" id="login-tiktok" type="button">Entrar com TikTok Shop</button>
-    <div id="g-btn" class="g-btn" hidden></div>
-    <div class="login-or"><span>ou use e-mail e senha</span></div>
-    <form id="form-conta" class="form conta" novalidate>
-      <div class="modo" id="modo-conta" role="tablist" aria-label="Entrar ou criar conta">
-        <button type="button" role="tab" data-m="entrar" aria-selected="true">Entrar</button>
-        <button type="button" role="tab" data-m="criar" aria-selected="false">Criar conta</button>
-      </div>
-      <label id="l-nome" hidden>Nome <input id="c-nome" autocomplete="name" placeholder="Seu nome"></label>
-      <label>E-mail <input id="c-email" type="email" inputmode="email" autocomplete="email" placeholder="voce@empresa.com"></label>
-      <label>Senha <input id="c-senha" type="password" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"></label>
-      <button type="submit" class="btn btn-primary btn-wide" id="c-ok">Entrar</button>
-    </form>
+    <details class="outras" id="outras">
+      <summary>Usar outra forma de entrar</summary>
+      <button class="btn btn-line btn-wide" id="login-tiktok" type="button">Entrar com TikTok Shop</button>
+      <div id="g-btn" class="g-btn" hidden></div>
+      <div class="login-or"><span>ou e-mail e senha</span></div>
+      <form id="form-conta" class="form conta" novalidate>
+        <div class="modo" id="modo-conta" role="tablist" aria-label="Entrar ou criar conta">
+          <button type="button" role="tab" data-m="entrar" aria-selected="true">Entrar</button>
+          <button type="button" role="tab" data-m="criar" aria-selected="false">Criar conta</button>
+        </div>
+        <label id="l-nome" hidden>Nome <input id="c-nome" autocomplete="name" placeholder="Seu nome"></label>
+        <label>E-mail <input id="c-email" type="email" inputmode="email" autocomplete="email" placeholder="voce@empresa.com"></label>
+        <label>Senha <input id="c-senha" type="password" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"></label>
+        <button type="submit" class="btn btn-primary btn-wide" id="c-ok">Entrar</button>
+      </form>
+    </details>
     <ul class="login-why" aria-label="Como funciona">
       <li><b>Sem senha aqui.</b> Você autoriza na página do próprio marketplace.</li>
       <li><b>Só leitura.</b> O app lê pedidos e produtos. Não altera nada.</li>

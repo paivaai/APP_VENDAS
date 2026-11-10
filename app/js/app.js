@@ -139,12 +139,14 @@
   /* ---------- decidir e desfazer ---------- */
   let toastTimer = null;
   function choose(id, opt, via, node) {
+    const dd = DECISIONS.find((x) => x.id === id);
+    if (dd && dd.draft && opt === "A") { try { navigator.clipboard.writeText(dd.draft); } catch (e) { /* sem área de transferência */ } }
     const finish = () => {
       decided[id] = { opt: opt, via: via, at: Date.now() };
       save(decided);
       renderHoje();
       const d = DECISIONS.find((x) => x.id === id);
-      showToast("Opção " + opt + " aprovada: " + d.title, id);
+      showToast(d.draft && opt === "A" ? "Resposta copiada. Cole na pergunta, dentro do Mercado Livre." : "Opção " + opt + " aprovada: " + d.title, id);
     };
     if (node && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       node.classList.add("leaving");
@@ -412,7 +414,7 @@
         } catch (e) { $("#login-msg").textContent = "Sem conexão com o servidor. Tente de novo."; }
       } });
       const box = $("#g-btn"); box.hidden = false;
-      google.accounts.id.renderButton(box, { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", locale: "pt-BR", width: Math.min(380, box.parentElement.clientWidth) });
+      google.accounts.id.renderButton(box, { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", locale: "pt-BR", width: 300 });
     };
     document.head.append(s);
   }
@@ -551,16 +553,33 @@
     return out;
   }
 
+  function decisoesPerguntas(qs) {
+    return qs.map((q) => {
+      const h = Math.max(0, Math.round((Date.now() - new Date(q.date_created).getTime()) / 3600000));
+      const tem = !!q.draft;
+      return { id: "q-" + q.id, channel: "Mercado Livre", crit: h >= 12 ? "alta" : "normal",
+        waiting: "esperando há " + (h < 1 ? "menos de 1 h" : h + " h"),
+        title: "Pergunta de comprador: " + (q.item_title || "seu anúncio"),
+        detail: "\u201C" + q.text + "\u201D",
+        draft: q.draft || "",
+        options: [
+          { k: "A", label: tem ? "Usar a resposta sugerida" : "Marcar como vista", effect: tem ? q.draft : "Sem sugestão agora. Responda direto no Mercado Livre.", value: 0 },
+          { k: "B", label: "Deixar para depois", effect: "A pergunta continua esperando no Mercado Livre.", value: 0 }],
+        more: "Resposta feita só com os dados do anúncio. Responder rápido melhora a sua reputação e a chance de venda." };
+    });
+  }
+
   async function iniciarReal() {
     if (!token()) { mostrarLogin(aviso); return; }
     const pill = document.querySelector(".demo-pill"); pill.textContent = "Carregando…"; pill.classList.add("skel");
     try {
-      const [tt, ml, me, contas, perfil] = await Promise.all([
+      const [tt, ml, me, contas, perfil, perguntas] = await Promise.all([
         api("/orders/"),
         api("/integrations/mercadolivre/orders").catch((e) => { if (e.sessao) throw e; return []; }),
         api("/integrations/mercadolivre/me").catch((e) => { if (e.sessao) throw e; return {}; }),
         api("/integrations/tiktok/accounts").catch((e) => { if (e.sessao) throw e; return []; }),
-        api("/auth/perfil").catch((e) => { if (e.sessao) throw e; return {}; })
+        api("/auth/perfil").catch((e) => { if (e.sessao) throw e; return {}; }),
+        api("/integrations/mercadolivre/perguntas").catch((e) => { if (e.sessao) throw e; return []; })
       ]);
       tt.forEach((o) => (o.channel = "TikTok Shop"));
       const pedidos = tt.concat(ml).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -578,7 +597,7 @@
       CANAIS[0].link = "/integrations/mercadolivre/link"; CANAIS[1].link = "/integrations/tiktok/link";
       renderCanais();
       if (mlOn || ttOn) {
-        DECISIONS.splice(0, DECISIONS.length, ...gerarDecisoes(pedidos, mlOn && ttOn ? "Todos os canais" : mlOn ? "Mercado Livre" : "TikTok Shop"));
+        DECISIONS.splice(0, DECISIONS.length, ...decisoesPerguntas(perguntas || []), ...gerarDecisoes(pedidos, mlOn && ttOn ? "Todos os canais" : mlOn ? "Mercado Livre" : "TikTok Shop"));
         $("#view-hoje .lead-text").textContent = "Os agentes analisaram os seus pedidos reais. Nada é alterado na sua loja sem a sua aprovação.";
         renderHoje();
       }

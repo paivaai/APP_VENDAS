@@ -204,3 +204,9 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 .conta{display:flex;flex-direction:column;gap:12px}
 .channels li .ch-btn{grid-column:2;justify-self:stretch;margin-top:10px}
 [hidden]{display:none!important}
+
+.outras{margin-top:14px}
+.outras summary{cursor:pointer;text-align:center;color:var(--muted,#566174);font-size:14px;padding:10px;list-style:none;text-decoration:underline}
+.outras summary::-webkit-details-marker{display:none}
+.outras[open] summary{margin-bottom:8px}
+.outras > .btn{margin-bottom:10px}
