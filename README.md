@@ -1,4 +1,4 @@
-# PDP — Paiva AI Decision Platform
+# P-Vendas (PDP — Paiva AI Decision Platform)
 
 SaaS multi-tenant que automatiza a operação de vendedores de marketplace (Mercado Livre, Shopee, TikTok Shop; Shein adiado) com agentes de IA. O cliente aprova as decisões pelo WhatsApp, sem precisar entrar em painel.
 
@@ -36,8 +36,8 @@ Depois de qualquer mudança no `nginx/nginx.conf`: `docker restart pdp-nginx-1`.
 ```
 backend/    FastAPI (auth, integrações, agentes)
 app/        App de demonstração (PWA, sem build)
-frontend/   Next.js 14 — dashboard do cliente        (a trazer da VPS)
-admin/      Next.js — painel admin multi-tenant       (a trazer da VPS)
+frontend/   Next.js 14 — dashboard do cliente
+admin/      Next.js — painel admin (esqueleto)
 nginx/      nginx.conf (modelo)
 docs/       status, arquitetura e lições de infra
 ```
