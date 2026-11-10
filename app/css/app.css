@@ -196,3 +196,4 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 @keyframes pulse{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){.skel{animation:none}}
 .orders .vazio{display:block;padding:16px;border:1px dashed var(--line);border-radius:12px}.orders .vazio .o-sub{display:block;margin-top:4px}
+.brand-logo{display:block;border-radius:8px}.login-logo{width:64px;height:64px;filter:drop-shadow(0 8px 14px rgba(20,40,140,.35))}.login-brand{gap:14px}.login-brand .brand-name{font-size:26px}

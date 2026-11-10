@@ -10,7 +10,8 @@ const ARQUIVOS = [
   'fonts/bricolage-grotesque-latin-wght-normal.woff2',
   'fonts/hanken-grotesk-latin-wght-normal.woff2',
   'icons/icon-192.png',
-  'icons/icon-512.png'
+  'icons/icon-512.png',
+  'icons/logo.svg'
 ];
 
 self.addEventListener('install', (e) => {
