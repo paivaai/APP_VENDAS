@@ -407,6 +407,7 @@
       b.style.height = Math.max(3, Math.round((v / max) * 100)) + "%"; bars.append(b);
     });
     const ul = $("#pedidos"); ul.replaceChildren();
+    if (!pedidos.length) ul.append(el("li", { class: "vazio" }, [el("span", { class: "o-name", text: "Nenhum pedido nos últimos dias" }), el("span", { class: "o-sub", text: "A conta está conectada e lida com sucesso. Quando houver vendas, elas aparecem aqui." })]));
     pedidos.slice(0, 8).forEach((o) => ul.append(el("li", {}, [
       el("span", { class: "o-name", text: "Pedido ···" + String(o.order_id || o.tiktok_order_id || o.id).slice(-4) }),
       el("span", { class: "o-sub", text: (o.channel || "") + " · " + (o.status || "sem status").toLowerCase().replace(/_/g, " ") }),

@@ -195,3 +195,4 @@ input,select,textarea{width:100%;background:var(--label);border:1.5px solid var(
 .skel{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.orders .vazio{display:block;padding:16px;border:1px dashed var(--line);border-radius:12px}.orders .vazio .o-sub{display:block;margin-top:4px}
