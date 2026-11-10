@@ -127,7 +127,14 @@
         <label>SKU <input id="f-sku" autocomplete="off" placeholder="SER-VC-30"></label>
         <label>Categoria sugerida <input id="f-category_hint" autocomplete="off" placeholder="Beleza e cuidado pessoal"></label>
       </div>
-      <label>Imagens (quantas) <input id="f-images" inputmode="numeric" autocomplete="off" placeholder="3"></label>
+      <div class="fotos">
+        <span class="fotos-t">Fotos do produto</span>
+        <input id="f-fotos" type="file" accept="image/*" multiple hidden>
+        <input id="f-images" type="hidden" value="0">
+        <button type="button" class="btn btn-line" id="f-fotos-btn">Adicionar fotos</button>
+        <div id="f-prev" class="prev" aria-live="polite"></div>
+        <p class="footnote" id="f-fotos-n">Nenhuma foto ainda. Use fotos nítidas, com fundo claro.</p>
+      </div>
       <button type="submit" class="btn btn-primary">Validar produto</button>
     </form>
     <div id="resultado" class="resultado" aria-live="polite" hidden></div>

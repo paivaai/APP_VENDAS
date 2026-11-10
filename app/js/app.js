@@ -236,6 +236,24 @@
   const LABEL = { title: "Título", description: "Descrição", price: "Preço", sku: "SKU", stock: "Estoque", category_hint: "Categoria sugerida", images: "Imagens" };
   const MKT = { mercado_livre: "Mercado Livre", shopee: "Shopee", shein: "Shein", tiktok: "TikTok Shop" };
 
+  /* fotos do produto: ficam só neste aparelho, nesta demonstração */
+  let fotos = [];
+  function pintarFotos() {
+    const box = $("#f-prev"); box.replaceChildren();
+    fotos.forEach((f, i) => {
+      const img = el("img", { alt: "Foto " + (i + 1) });
+      img.src = f.url;
+      box.append(el("div", { class: "ph" }, [img, el("button", { type: "button", "aria-label": "Remover foto " + (i + 1), text: "×", onclick: () => { URL.revokeObjectURL(f.url); fotos.splice(i, 1); pintarFotos(); } })]));
+    });
+    $("#f-images").value = String(fotos.length);
+    $("#f-fotos-n").textContent = fotos.length ? fotos.length + (fotos.length === 1 ? " foto adicionada." : " fotos adicionadas.") + " Mínimo recomendado: 3." : "Nenhuma foto ainda. Use fotos nítidas, com fundo claro.";
+  }
+  $("#f-fotos-btn").addEventListener("click", () => $("#f-fotos").click());
+  $("#f-fotos").addEventListener("change", (e) => {
+    Array.from(e.target.files || []).slice(0, 12 - fotos.length).forEach((f) => { if (f.type.startsWith("image/")) fotos.push({ url: URL.createObjectURL(f) }); });
+    e.target.value = ""; pintarFotos();
+  });
+
   $("#form-produto").addEventListener("submit", (e) => {
     e.preventDefault();
     const mkt = $("#f-mkt").value;
