@@ -396,7 +396,7 @@
   $("#login-demo").addEventListener("click", () => { $("#login").hidden = true; });
 
   // Entrar com Google: preencha o ID do cliente (público) criado no Google Cloud e o botão aparece
-  const GOOGLE_CLIENT_ID = "";
+  const GOOGLE_CLIENT_ID = "839252003508-r3q6vg12rejgqg8a3541oa8935fe0nam.apps.googleusercontent.com";
   function iniciarGoogle() {
     if (!GOOGLE_CLIENT_ID) return;
     const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true;
