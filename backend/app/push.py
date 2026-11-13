@@ -103,27 +103,29 @@ async def _ciclo():
     try:
         uids = [r[0] for r in db.execute(text("SELECT DISTINCT user_id FROM push_subs")).all()]
         for uid in uids:
-            acc = db.query(MLAccount).filter(MLAccount.user_id == uid).first()
-            if not acc:
-                continue
-            try:
-                tok = await _token_valido(db, acc)
-                async with httpx.AsyncClient() as c:
-                    r = await c.get(API + "/questions/search", headers={"Authorization": "Bearer " + tok}, timeout=30.0, params={
-                        "seller_id": acc.ml_user_id, "status": "UNANSWERED", "sort_fields": "date_created", "sort_types": "DESC", "limit": 20})
-            except Exception as e:
-                log.error("vigia: %s", e)
-                continue
-            if r.status_code != 200:
+            accs = db.query(MLAccount).filter(MLAccount.user_id == uid).all()
+            if not accs:
                 continue
             primeira = db.execute(text("INSERT INTO push_visto (user_id, chave) VALUES (:u,'__semente__') ON CONFLICT DO NOTHING RETURNING 1"), {"u": uid}).first() is not None
             db.commit()
-            for q in r.json().get("questions", []):
-                novo = db.execute(text("INSERT INTO push_visto (user_id, chave) VALUES (:u,:k) ON CONFLICT DO NOTHING RETURNING 1"),
-                                  {"u": uid, "k": "q" + str(q.get("id"))}).first() is not None
-                db.commit()
-                if novo and not primeira:
-                    _enviar(uid, "Nova pergunta de comprador", (q.get("text") or "")[:110] + " Responda rápido para vender.")
+            for acc in accs:
+                try:
+                    tok = await _token_valido(db, acc)
+                    async with httpx.AsyncClient() as c:
+                        r = await c.get(API + "/questions/search", headers={"Authorization": "Bearer " + tok}, timeout=30.0, params={
+                            "seller_id": acc.ml_user_id, "status": "UNANSWERED", "sort_fields": "date_created", "sort_types": "DESC", "limit": 20})
+                except Exception as e:
+                    log.error("vigia: %s", e)
+                    continue
+                if r.status_code != 200:
+                    continue
+                for q in r.json().get("questions", []):
+                    novo = db.execute(text("INSERT INTO push_visto (user_id, chave) VALUES (:u,:k) ON CONFLICT DO NOTHING RETURNING 1"),
+                                      {"u": uid, "k": "q" + str(q.get("id"))}).first() is not None
+                    db.commit()
+                    if novo and not primeira:
+                        loja = (" (" + acc.nickname + ")") if len(accs) > 1 and acc.nickname else ""
+                        _enviar(uid, "Nova pergunta de comprador" + loja, (q.get("text") or "")[:110] + " Responda rápido para vender.")
     finally:
         db.close()
 

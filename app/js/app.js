@@ -304,7 +304,7 @@
       el("span", { class: "dot " + c.t, "aria-hidden": "true" }),
       el("div", {}, [el("div", { class: "ch-name", text: c.n }), el("div", { class: "ch-status " + c.t, text: c.s })]),
       el("p", { class: "ch-note", text: c.note })
-    ].concat(c.link && !c.on ? [el("button", { class: "btn btn-primary ch-btn", type: "button", text: "Conectar " + c.n, onclick: () => ligar(c.link) })] : []))));
+    ].concat(c.link ? [el("button", { class: "btn " + (c.on ? "btn-line" : "btn-primary") + " ch-btn", type: "button", text: c.on ? "Adicionar outra loja" : "Conectar " + c.n, onclick: () => ligar(c.link) })] : []))));
   }
 
   /* ---------- aba Loja (números fictícios, sempre iguais) ---------- */
@@ -468,8 +468,17 @@
   });
 
   // nenhum dado pessoal do comprador é buscado nem mostrado: só id curto, status, valor e hora
-  function renderLojaReal(pedidos) {
+  let lojaFiltro = "todas";
+  function renderLojaReal(todos) {
+    const nomeLoja = (o) => o.store || o.channel || "Loja";
+    const lojas = Array.from(new Set(todos.map(nomeLoja)));
+    if (lojaFiltro !== "todas" && !lojas.includes(lojaFiltro)) lojaFiltro = "todas";
+    const pedidos = lojaFiltro === "todas" ? todos : todos.filter((o) => nomeLoja(o) === lojaFiltro);
     const seg = $("#seg"); seg.replaceChildren();
+    if (lojas.length > 1) ["todas"].concat(lojas).forEach((n) => seg.append(el("button", {
+      role: "tab", text: n === "todas" ? "Todas as lojas" : n, "aria-selected": String(n === lojaFiltro),
+      onclick: () => { lojaFiltro = n; renderLojaReal(todos); }
+    })));
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     const dias = Array(7).fill(0), qtd = Array(7).fill(0);
     pedidos.forEach((o) => {
@@ -575,7 +584,7 @@
     return qs.map((q) => {
       const h = Math.max(0, Math.round((Date.now() - new Date(q.date_created).getTime()) / 3600000));
       const tem = !!q.draft;
-      return { id: "q-" + q.id, channel: "Mercado Livre", crit: h >= 12 ? "alta" : "normal",
+      return { id: "q-" + q.id, channel: q.store ? "Mercado Livre · " + q.store : "Mercado Livre", crit: h >= 12 ? "alta" : "normal",
         waiting: "esperando há " + (h < 1 ? "menos de 1 h" : h + " h"),
         title: "Pergunta de comprador: " + (q.item_title || "seu anúncio"),
         detail: "\u201C" + q.text + "\u201D",
@@ -644,9 +653,10 @@
       const mlOn = !!me.connected, ttOn = contas.length > 0;
       CANAIS[0].on = mlOn; CANAIS[1].on = ttOn;
       CANAIS[0].t = mlOn ? "ok" : "warn"; CANAIS[1].t = ttOn ? "ok" : "warn";
-      CANAIS[0].s = mlOn ? "Conectado: sua loja" : "Não conectado";
-      CANAIS[0].note = mlOn ? ml.length + " pedidos lidos agora da sua conta " + (me.nickname || "") + "." : "Conecte a sua conta para ver os pedidos reais aqui. Você autoriza na página do Mercado Livre.";
-      CANAIS[1].s = ttOn ? "Conectado: sua loja" : "Não conectado";
+      const lojasML = me.stores || (me.nickname ? [me.nickname] : []);
+      CANAIS[0].s = mlOn ? (lojasML.length > 1 ? "Conectado: " + lojasML.length + " lojas" : "Conectado: sua loja") : "Não conectado";
+      CANAIS[0].note = mlOn ? ml.length + " pedidos lidos agora de: " + lojasML.join(", ") + ". Para adicionar outra loja, entre antes na conta dela no Mercado Livre." : "Conecte a sua conta para ver os pedidos reais aqui. Você autoriza na página do Mercado Livre.";
+      CANAIS[1].s = ttOn ? (contas.length > 1 ? "Conectado: " + contas.length + " lojas" : "Conectado: sua loja") : "Não conectado";
       CANAIS[1].note = ttOn ? tt.length + " pedidos lidos agora da sua conta do TikTok Shop." : "Conecte a sua loja do TikTok Shop. Você autoriza na página do TikTok.";
       CANAIS[0].link = "/integrations/mercadolivre/link"; CANAIS[1].link = "/integrations/tiktok/link";
       renderCanais();
