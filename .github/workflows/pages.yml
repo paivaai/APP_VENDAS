@@ -37,7 +37,7 @@ jobs:
           mkdir _site
           cp -r app/. _site/
           # versão do service worker = commit (o celular percebe a atualização sozinho)
-          sed -i "s/^const VERSAO = '.*';/const VERSAO = '${GITHUB_SHA::7}';/" _site/service-worker.js
+          find _site -name service-worker.js -exec sed -i "s/^const VERSAO = '.*';/const VERSAO = '${GITHUB_SHA::7}';/" {} +
           grep -n "^const VERSAO" _site/service-worker.js
           # todo arquivo listado no cache precisa existir
           node -e "
