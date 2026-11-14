@@ -72,7 +72,7 @@ gravar("index.html", h)
 
 # script: textos e armazenamento separados por cliente
 j = ler("js/app.js")
-j = j.replace("Pré-venda Paiva", "Pré-venda").replace("Venda Paiva", "Venda").replace('"pdp-demo-v1"', '"pv-%s-demo"' % a.slug).replace('"pdp-token"', '"pv-%s-token"' % a.slug)
+j = j.replace('const MARCA = "";', 'const MARCA = "%s";' % a.slug).replace("Pré-venda Paiva", "Pré-venda").replace("Venda Paiva", "Venda").replace('"pdp-demo-v1"', '"pv-%s-demo"' % a.slug).replace('"pdp-token"', '"pv-%s-token"' % a.slug)
 gravar("js/app.js", j)
 
 # estilo

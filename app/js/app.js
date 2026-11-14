@@ -384,6 +384,8 @@
   /* ---------- entrar com a conta do marketplace (dados reais) ---------- */
   const API = "https://api.pdp.paivaai.com.br";
   const TK = "pdp-token";
+  const MARCA = ""; // preenchido pelo gerador de marca (white-label); vazio no app principal
+  const via = (destino) => (MARCA ? API + "/auth/marca?r=" + MARCA + "&to=" + encodeURIComponent(destino) : destino);
   const lerToken = () => { try { return localStorage.getItem(TK); } catch (e) { return null; } };
   const gravarToken = (t) => { try { if (t) localStorage.setItem(TK, t); else localStorage.removeItem(TK); } catch (e) { /* sem armazenamento */ } };
 
@@ -411,8 +413,8 @@
     $("#login").hidden = false;
     $("#login-msg").textContent = msg || "";
   }
-  $("#login-tiktok").addEventListener("click", () => { location.href = API + "/integrations/tiktok/login"; });
-  $("#login-ml").addEventListener("click", () => { location.href = API + "/integrations/mercadolivre/login"; });
+  $("#login-tiktok").addEventListener("click", () => { location.href = via(API + "/integrations/tiktok/login"); });
+  $("#login-ml").addEventListener("click", () => { location.href = via(API + "/integrations/mercadolivre/login"); });
   $("#login-demo").addEventListener("click", () => { $("#login").hidden = true; });
 
   // Entrar com Google: preencha o ID do cliente (público) criado no Google Cloud e o botão aparece
@@ -508,7 +510,7 @@
   $("#sair").addEventListener("click", () => { gravarToken(null); tokenMem = null; location.reload(); });
 
   async function ligar(caminho) {
-    try { const d = await api(caminho); location.href = d.auth_url; }
+    try { const d = await api(caminho); location.href = via(d.auth_url); }
     catch (e) { if (e.sessao) { gravarToken(null); tokenMem = null; mostrarLogin("Sua sessão expirou. Entre de novo."); } }
   }
   function irParaCanais() { const t = document.querySelector('.tab[data-view="canais"]'); if (t) t.click(); }
